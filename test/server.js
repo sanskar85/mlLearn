@@ -49,9 +49,8 @@ app.post('/model/trained', async (req, res) => {
 			message: 'File upload failed',
 		});
 	}
-	const { model, accuracy, recall, precision, f1_score, confusion_matrix, classification_report } =
+	const { model, accuracy, recall, precision, f1_score, confusion_matrix } =
 		req.body;
-	console.log(model, accuracy, recall, precision, f1_score);
 
 	res.send('ok');
 });

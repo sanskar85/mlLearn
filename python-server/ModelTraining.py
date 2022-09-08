@@ -1,3 +1,5 @@
+from cmath import log
+from flask import jsonify
 import json
 from time import time
 import os
@@ -18,9 +20,11 @@ import requests
 
 class ModelTraining:
 
-    def __init__(self, id, csv):
+    def __init__(self, id, csv, callback_success, callback_failure):
         self.id = id
         self.csv = csv
+        self.callback_success = callback_success
+        self.callback_failure = callback_failure
         self.results = {}
 
     def fire_and_forget(f):
@@ -35,24 +39,27 @@ class ModelTraining:
 
         columns = dataset.columns
         encoder_array = []
+        available_options = {}
 
         imputer = SimpleImputer(missing_values=np.nan, strategy='mean')
 
         for key, value in dataset.isnull().sum().items():
             type = dataset[key].dtype
             if (value > 0 and type == np.float64 and type == np.int64):
-                print(key)
                 imputer = imputer.fit(dataset[key])
                 dataset[key] = imputer.transform(dataset[key])
 
         for (index, type) in enumerate(dataset.dtypes):
             if (type == 'object'):
                 encoder_array.append(columns[index])
+                available_options[columns[index]
+                                  ] = dataset[columns[index]].unique().tolist()
 
         if (len(encoder_array) > 0):
             enc = LabelEncoder()
             dataset.loc[:, encoder_array] = \
                 dataset.loc[:, encoder_array].apply(enc.fit_transform)
+                
 
         target = dataset[columns[-1]]
         features = dataset.drop([columns[-1]], axis=1)
@@ -63,6 +70,9 @@ class ModelTraining:
         self.x_test = x_test
         self.y_train = y_train
         self.y_test = y_test
+
+        self.available_options = json.dumps(available_options)
+        print(self.available_options)
 
     @fire_and_forget
     def svm(self):
@@ -79,7 +89,7 @@ class ModelTraining:
                 n_jobs=-1,  # -1 means all CPUs
                 refit=True,  # refit to best model
                 cv=cv,  # cross validation
-                # verbose=3,   #  for full output
+                # verbose=3,  # for full output
             )
             grid.fit(self.x_train, self.y_train)
 
@@ -95,15 +105,15 @@ class ModelTraining:
             confusion = confusion_matrix(self.y_test, y_pred)
             classification = classification_report(self.y_test, y_pred)
             recall = recall_score(
-                self.y_test, y_pred, average='micro', zero_division=1)
+                self.y_test, y_pred, average='micro', labels=np.unique(y_pred))
             precision = precision_score(
-                self.y_test, y_pred, average='micro', zero_division=1)
+                self.y_test, y_pred, average='micro', labels=np.unique(y_pred))
             f1 = f1_score(self.y_test, y_pred,
-                          average='micro', zero_division=1)
+                          average='micro', labels=np.unique(y_pred))
 
             print("SVM", "Accuracy: " + str(accuracy * 100))
             result = {
-                'model': 'SVM',
+                'model': 'Support Vector Machine',
                 'accuracy': str(round(accuracy * 100, 2)),
                 'recall': str(round(recall * 100, 2)),
                 'precision': str(round(precision * 100, 2)),
@@ -160,11 +170,11 @@ class ModelTraining:
             confusion = confusion_matrix(self.y_test, y_pred)
             classification = classification_report(self.y_test, y_pred)
             recall = recall_score(
-                self.y_test, y_pred, average='micro', zero_division=1)
+                self.y_test, y_pred, average='micro', labels=np.unique(y_pred))
             precision = precision_score(
-                self.y_test, y_pred, average='micro', zero_division=1)
+                self.y_test, y_pred, average='micro', labels=np.unique(y_pred))
             f1 = f1_score(self.y_test, y_pred,
-                          average='micro', zero_division=1)
+                          average='micro', labels=np.unique(y_pred))
 
             print("LR", str(accuracy))
             result = {
@@ -223,11 +233,11 @@ class ModelTraining:
             confusion = confusion_matrix(self.y_test, y_pred)
             classification = classification_report(self.y_test, y_pred)
             recall = recall_score(
-                self.y_test, y_pred, average='micro', zero_division=1)
+                self.y_test, y_pred, average='micro', labels=np.unique(y_pred))
             precision = precision_score(
-                self.y_test, y_pred, average='micro', zero_division=1)
+                self.y_test, y_pred, average='micro', labels=np.unique(y_pred))
             f1 = f1_score(self.y_test, y_pred,
-                          average='micro', zero_division=1)
+                          average='micro', labels=np.unique(y_pred))
 
             print("RF", str(accuracy))
             result = {
@@ -298,11 +308,11 @@ class ModelTraining:
             confusion = confusion_matrix(self.y_test, y_pred)
             classification = classification_report(self.y_test, y_pred)
             recall = recall_score(
-                self.y_test, y_pred, average='micro', zero_division=1)
+                self.y_test, y_pred, average='micro', labels=np.unique(y_pred))
             precision = precision_score(
-                self.y_test, y_pred, average='micro', zero_division=1)
+                self.y_test, y_pred, average='micro', labels=np.unique(y_pred))
             f1 = f1_score(self.y_test, y_pred,
-                          average='micro', zero_division=1)
+                          average='micro', labels=np.unique(y_pred))
 
             print("K-Nearest Neighbor Accuracy:", str(accuracy))
             result = {
@@ -356,15 +366,15 @@ class ModelTraining:
 
     @ fire_and_forget
     def send_results(self, payload, file):
-        url = 'http://localhost:9000/model/trained'
+        url = self.callback_success
         _payload = {}
-
+        _payload['id'] = self.id
+        _payload['available_options'] = self.available_options
         for key, value in payload.items():
             _payload[key] = value
-
         files = {'file': open(file, 'rb')}
-        res = requests.request("POST", url,
-                               data=_payload, files=files)
+        requests.request("POST", url,
+                         data=_payload, files=files)
 
         if os.path.exists(file):
             os.remove(file)
@@ -373,10 +383,14 @@ class ModelTraining:
 
     @ fire_and_forget
     def send_error(self, payload):
+        _payload = {}
+        _payload['id'] = self.id
+        for key, value in payload.items():
+            _payload[key] = value
 
-        url = 'http://localhost:9000/model/error-training'
+        url = self.callback_failure
 
         headers = {'Content-type': 'application/json', 'Accept': 'text/plain'}
         requests.post(url,
-                      data=json.dumps(payload),
+                      data=json.dumps(_payload),
                       headers=headers)
