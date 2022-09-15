@@ -152,8 +152,8 @@ def predict_model():
 
     modelPredictor = ModelPredictor(dataset=dataset_path, model=model_path)
     print(data)
-    predictedValue = modelPredictor.predict(data)
     try:
+        predictedValue = modelPredictor.predict(data)
         resp = jsonify(
             {'message': predictedValue, "status_code": 200, 'success': True})
     except:
