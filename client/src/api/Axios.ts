@@ -3,7 +3,11 @@ import { toast } from 'react-toastify';
 // import { setLoading } from '../store/reducers/Utils';
 // import store from '../store/store';
 
-const ServerURL = 'http://localhost:9000/';
+const PROTOCOL = window.location.protocol;
+const BASE_URL = window.location.hostname;
+const PORT = 9001;
+
+const ServerURL = PROTOCOL + '//' + BASE_URL + ':' + PORT;
 
 const Axios = axios.create({
 	baseURL: ServerURL,

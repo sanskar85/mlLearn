@@ -21,20 +21,22 @@ import moment from 'moment';
 //----------------------------------------------------CORS
 
 import cors from 'cors';
-const allowlist = [process.env.CLIENT_URL];
+// const allowlist = [process.env.CLIENT_URL];
 
 const corsOptionsDelegate = (req: Request, callback: any) => {
 	let corsOptions;
 
-	let isDomainAllowed = allowlist.indexOf(req.header('Origin')) !== -1;
+	// let isDomainAllowed = allowlist.indexOf(req.header('Origin')) !== -1;
 
-	if (isDomainAllowed) {
-		// Enable CORS for this request
-		corsOptions = { origin: true, credentials: true };
-	} else {
-		// Disable CORS for this request
-		corsOptions = { origin: false };
-	}
+	// if (isDomainAllowed) {
+	// 	// Enable CORS for this request
+	// 	corsOptions = { origin: true, credentials: true };
+	// } else {
+	// 	// Disable CORS for this request
+	// 	corsOptions = { origin: false };
+	// }
+
+	corsOptions = { origin: true, credentials: true };
 	callback(null, corsOptions);
 };
 
@@ -55,15 +57,10 @@ app.get('/api', async (req, res) => {
 import AuthRoute from './routes/Auth';
 import CollectionsRoute from './routes/Collections';
 import ModelRoute from './routes/Models';
-// import Masters from './route/masters/index.js';
-// import Products from './route/products/Products.js';
 
 app.use('/auth', AuthRoute);
 app.use('/collections', CollectionsRoute);
 app.use('/model', ModelRoute);
-// app.use('/masters', Masters);
-// app.use('/products', Products);
-
 app.get('/images/:imageID', async (req, res) => {
 	if (!req.params.imageID) {
 		return res.status(404);
@@ -75,7 +72,7 @@ app.get('/images/:imageID', async (req, res) => {
 	}
 });
 
-const PORT = process.env.PORT || 9000;
+const PORT = process.env.PORT!;
 const server = app.listen(PORT, () =>
 	console.log(`Server running at ${getTime()} on port ${PORT}`)
 );

@@ -13,6 +13,7 @@ import ForgotPassword from './screens/auth/ForgotPassword';
 import ResetPassword from './screens/auth/ResetPassword';
 import EditModel from './screens/editModel/EditModel';
 import Predict from './screens/predict/Predict';
+import NotFound from './components/NotFound';
 
 const App = () => (
 	<BrowserRouter>
@@ -46,6 +47,7 @@ const App = () => (
 				/>
 				<Route path=':id/Predict' element={<Predict />} />
 			</Route>
+			<Route path='*' element={<NotFound />} />
 		</Routes>
 	</BrowserRouter>
 );
