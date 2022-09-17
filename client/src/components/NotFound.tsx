@@ -12,7 +12,7 @@ const NotFound = () => {
 		navigate('/collections');
 	};
 	return (
-		<Screen className='flex-center font-sans bg-[#353535] text-[#dddddd] not-found_perspective-1200'>
+		<Screen className='not-found flex-center font-sans bg-[#353535] text-[#dddddd] not-found_perspective-1200'>
 			<Text className='not-found_header'>404</Text>
 			<Box className='fixed-0 overflow-hidden'>
 				<Box className='centered-axis-xy h-[250vmax] w-[250vmax]'>
